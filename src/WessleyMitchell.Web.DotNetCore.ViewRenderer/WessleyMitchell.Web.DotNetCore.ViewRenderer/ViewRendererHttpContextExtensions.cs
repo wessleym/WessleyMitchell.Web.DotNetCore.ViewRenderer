@@ -56,7 +56,7 @@ namespace WessleyMitchell.Web.DotNetCore.ViewRenderer
             var hostEnvironment = (IHostEnvironment?)requestServices.GetService(hostEnvironmentType);
 #else
             Type hostEnvironmentType = typeof(IWebHostEnvironment);
-            var hostEnvironment =(IWebHostEnvironment?)requestServices.GetService(typeof(IWebHostEnvironment));
+            var hostEnvironment = (IWebHostEnvironment?)requestServices.GetService(typeof(IWebHostEnvironment));
 #endif
             if (hostEnvironment == null) { throw new InvalidOperationException(hostEnvironmentType.FullName + " had not been added to the dependency container."); }
             //viewEngine.GetView can apparently handle
@@ -78,11 +78,18 @@ namespace WessleyMitchell.Web.DotNetCore.ViewRenderer
             return view;
         }
 
-        public static async Task<string> RenderViewAsync<TModel>(this HttpContext httpContext, string viewName, TModel model, bool isMainPage = true)
+        /// <summary>Renders a Razor view (.cshtml) to a string</summary>
+        /// <typeparam name="TModel"></typeparam>
+        /// <param name="httpContext">The current HttpContext</param>
+        /// <param name="viewNameOrPath">A view name or a path to a view (e.g., ~/Pages/SomePage.cshtml)</param>
+        /// <param name="model">The model to use with the view</param>
+        /// <param name="isMainPage">From the Microsoft.AspNetCore.Mvc.ViewEngines.IViewEngine documentation:  Determines if the page being found is the main page for an action.</param>
+        /// <returns>An HTML string</returns>
+        public static async Task<string> RenderViewAsync<TModel>(this HttpContext httpContext, string viewNameOrPath, TModel model, bool isMainPage = true)
         {
             IServiceProvider requestServices = httpContext.RequestServices;
             ActionContext actionContext = GetActionContext(requestServices);
-            IView view = GetView(requestServices, actionContext, viewName, isMainPage);
+            IView view = GetView(requestServices, actionContext, viewNameOrPath, isMainPage);
             ViewDataDictionary<TModel> viewData = GetViewData(model);
             TempDataDictionary tempData = GetTempData(actionContext, requestServices);
             using (StringWriter writer = new StringWriter())
