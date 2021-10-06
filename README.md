@@ -13,9 +13,13 @@ Add this NuGet package:
 ```
 
 # Usage
-Invoke the renderer like this:
+Add a using statement:
 ```c#
-string html = await HttpContext.RenderViewAsync("Pages/SomePage.cshtml", new SomePageModel("X"), isMainPage: false);
+using WessleyMitchell.Web.DotNetCore.ViewRenderer;
+```
+Invoke the renderer:
+```c#
+string html = await HttpContext.RenderViewAsync("~/Pages/SomePage.cshtml", new SomePageModel("X"), isMainPage: false);
 ```
 
 # Known Issues
