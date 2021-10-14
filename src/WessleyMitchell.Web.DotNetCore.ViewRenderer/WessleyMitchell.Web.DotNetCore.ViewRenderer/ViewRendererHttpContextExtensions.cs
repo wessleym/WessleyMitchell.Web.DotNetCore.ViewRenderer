@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
 #if NETSTANDARD2_0
 using Microsoft.Extensions.Hosting;
 #endif
@@ -41,24 +42,19 @@ namespace WessleyMitchell.Web.DotNetCore.ViewRenderer
 
         private static TempDataDictionary GetTempData(ActionContext actionContext, IServiceProvider requestServices)
         {
-            ITempDataProvider? tempDataProvider = (ITempDataProvider?)requestServices.GetService(typeof(ITempDataProvider));
-            if (tempDataProvider == null) { throw new InvalidOperationException(nameof(ITempDataProvider) + " had not been added to the dependency container."); }
+            ITempDataProvider tempDataProvider = requestServices.GetRequiredService<ITempDataProvider>();
             TempDataDictionary tempData = new TempDataDictionary(actionContext.HttpContext, tempDataProvider);
             return tempData;
         }
 
         private static ViewEngineResult GetViewEngineResult(IServiceProvider requestServices, ActionContext actionContext, string viewName, bool isMainPage)
         {
-            ICompositeViewEngine? viewEngine = (ICompositeViewEngine?)requestServices.GetService(typeof(ICompositeViewEngine));
-            if (viewEngine == null) { throw new InvalidOperationException(nameof(ICompositeViewEngine) + " had not been added to the dependency container."); }
+            ICompositeViewEngine viewEngine = requestServices.GetRequiredService<ICompositeViewEngine>();
 #if NETSTANDARD2_0
-            Type hostEnvironmentType = typeof(IHostEnvironment);
-            var hostEnvironment = (IHostEnvironment?)requestServices.GetService(hostEnvironmentType);
+            IHostEnvironment hostEnvironment = requestServices.GetRequiredService<IHostEnvironment>();
 #else
-            Type hostEnvironmentType = typeof(IWebHostEnvironment);
-            var hostEnvironment = (IWebHostEnvironment?)requestServices.GetService(typeof(IWebHostEnvironment));
+            IWebHostEnvironment hostEnvironment = requestServices.GetRequiredService<IWebHostEnvironment>();
 #endif
-            if (hostEnvironment == null) { throw new InvalidOperationException(hostEnvironmentType.FullName + " had not been added to the dependency container."); }
             //viewEngine.GetView can apparently handle
             //"application relative" (https://github.com/dotnet/aspnetcore/blob/e30d3c52ff5f5e759dd0d3c088b63393a5809d82/src/Mvc/Mvc.Razor/src/RazorViewEngine.cs#L501)
             //and
