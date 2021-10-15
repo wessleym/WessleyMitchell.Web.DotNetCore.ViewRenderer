@@ -24,4 +24,4 @@ string html = await HttpContext.RenderViewAsync("~/Pages/SomePage.cshtml", new S
 
 # Known Issues
 
-I can never get this code to work for a .cshtml with `@page` at the top.  It only seems to work with partials (no `@page`).  If `@page` is used, Model is null on the .cshtml page. Again, this does not occur when no `@page` is at the top.  If someone knows a solution, I would appreciate a pull request.  Thank you.
+I have not been able to get this code to work for a .cshtml with `@page` at the top.  It only seems to work with partials (no `@page`).  If `@page` is used, Model is null on the .cshtml page. Again, this does not occur when no `@page` is at the top.  If someone knows a solution, I would appreciate a pull request.  Thank you.
