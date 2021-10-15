@@ -1,4 +1,4 @@
-﻿#if !NETSTANDARD2_0
+﻿#if !NETSTANDARD2_0 && !NETSTANDARD2_1
 using Microsoft.AspNetCore.Hosting;
 #endif
 using Microsoft.AspNetCore.Http;
@@ -10,11 +10,13 @@ using Microsoft.AspNetCore.Mvc.ViewEngines;
 using Microsoft.AspNetCore.Mvc.ViewFeatures;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.DependencyInjection;
-#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NETSTANDARD2_1
 using Microsoft.Extensions.Hosting;
 #endif
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace WessleyMitchell.Web.DotNetCore.ViewRenderer
@@ -50,11 +52,12 @@ namespace WessleyMitchell.Web.DotNetCore.ViewRenderer
         private static ViewEngineResult GetViewEngineResult(IServiceProvider requestServices, ActionContext actionContext, string viewName, bool isMainPage)
         {
             ICompositeViewEngine viewEngine = requestServices.GetRequiredService<ICompositeViewEngine>();
-#if NETSTANDARD2_0
+#if NETSTANDARD2_0 || NETSTANDARD2_1
             IHostEnvironment hostEnvironment = requestServices.GetRequiredService<IHostEnvironment>();
 #else
             IWebHostEnvironment hostEnvironment = requestServices.GetRequiredService<IWebHostEnvironment>();
 #endif
+            /*I was previously using this algorithm, but I switched the algorith following this commented section, which is modified from Microsoft.
             //viewEngine.GetView can apparently handle
             //"application relative" (https://github.com/dotnet/aspnetcore/blob/e30d3c52ff5f5e759dd0d3c088b63393a5809d82/src/Mvc/Mvc.Razor/src/RazorViewEngine.cs#L501)
             //and
@@ -63,8 +66,16 @@ namespace WessleyMitchell.Web.DotNetCore.ViewRenderer
             ViewEngineResult viewResult = viewName.StartsWith("~/") || viewName.EndsWith(".cshtml") ?
                 viewEngine.GetView(hostEnvironment.ContentRootPath, viewName, isMainPage) :
                 viewEngine.FindView(actionContext, viewName, isMainPage);
-            if (!viewResult.Success) { throw new ArgumentException("A view with the name " + viewName + " could not be found."); }
-            return viewResult;
+            if (!viewResult.Success) { throw new ArgumentException("A view with the name " + viewName + " could not be found."); }*/
+            //Modified from Microsoft code:  https://github.com/aspnet/samples/blob/main/samples/aspnetcore/mvc/renderviewtostring/RazorViewToStringRenderer.cs
+            ViewEngineResult? getViewResult = viewEngine.GetView(executingFilePath: null, viewPath: viewName, isMainPage: isMainPage);
+            if (getViewResult.Success) { return getViewResult; }
+            ViewEngineResult? findViewResult = viewEngine.FindView(actionContext, viewName, isMainPage: isMainPage);
+            if (findViewResult.Success) { return findViewResult; }
+            IEnumerable<string> searchedLocations = getViewResult.SearchedLocations.Concat(findViewResult.SearchedLocations);
+            IEnumerable<string> errorLines = (new string[] { "Unable to find view " + viewName + ". The following locations were searched:" }).Concat(searchedLocations);
+            string errorMessage = string.Join(Environment.NewLine, errorLines);
+            throw new InvalidOperationException(errorMessage);
         }
 
         private static IView GetView(IServiceProvider requestServices, ActionContext actionContext, string viewName, bool isMainPage)
